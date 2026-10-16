@@ -16,6 +16,7 @@ jobs:
           find . -name '*.php' -print0 | xargs -0 -n1 php -l
           php tests/updater.php
           php tests/auth.php
+          php tests/admin-access.php
       - name: Build fixed-folder archive
         run: |
           mkdir -p build/md-control-receiver

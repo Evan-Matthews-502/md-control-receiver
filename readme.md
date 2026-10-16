@@ -40,3 +40,16 @@ option is retained.
 Run `php tests/updater.php`, `php tests/auth.php`, and lint all PHP files before releasing. These are
 isolated regression checks; also verify a real WordPress update on staging,
 including cron and bulk updates, before deploying across sites.
+
+## Admin visibility
+
+The Plugins table entry and MD Control settings are visible only to logged-in
+users with `manage_options` whose account email matches `evan@matthewsdesign.co`
+or `webdev@matthewsdesign.co` (case-insensitive). This checks the user's email,
+not the site's Administration Email Address. Other users cannot open the settings
+page directly or regenerate its key. Activation redirects follow the same rule.
+Background updates and API authentication are unaffected.
+
+This controls the active plugin's admin interface, not access to server files,
+WP-CLI, or other administrative tools. An inactive plugin cannot hide itself.
+Run `php tests/admin-access.php` to validate visibility and settings restrictions.

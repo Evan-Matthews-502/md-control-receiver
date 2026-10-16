@@ -19,6 +19,7 @@ function md_control_generate_api_key() {
 }
 
 require_once plugin_dir_path(__FILE__) . 'includes/api/endpoints.php';
+require_once plugin_dir_path(__FILE__) . 'includes/admin/access.php';
 require_once plugin_dir_path(__FILE__) . 'includes/admin/settings-page.php';
 
 add_action('init', function () {
@@ -142,7 +143,7 @@ add_action('admin_init', function () {
     if (get_option('md_control_do_activation_redirect')) {
         delete_option('md_control_do_activation_redirect');
 
-        if (!isset($_GET['activate-multi'])) {
+        if (md_control_can_manage() && !isset($_GET['activate-multi'])) {
             wp_safe_redirect(admin_url('options-general.php?page=md-control-settings'));
             exit;
         }
