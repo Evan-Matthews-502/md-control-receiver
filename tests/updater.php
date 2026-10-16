@@ -56,4 +56,31 @@ foreach (['md-control-receiver-main', 'md-control-receiver-1.2.6', 'md-control-r
 $endpoints = file_get_contents(__DIR__ . '/../includes/api/endpoints.php');
 check(!preg_match('/backup|ai1wm|wpress/i', $endpoints), 'backup API removed');
 check(!file_exists(__DIR__ . '/../run-backup.php'), 'backup runner removed');
+// Verify source renaming with real directories, rather than only mocked moves.
+class LocalFilesystem {
+    function exists($path) { return file_exists($path); }
+    function move($source, $destination) { return rename($source, $destination); }
+}
+$root = sys_get_temp_dir() . '/md-control-test-' . bin2hex(random_bytes(8));
+mkdir($root);
+try {
+    foreach (['md-control-receiver-main', 'md-control-receiver-1.2.6', 'md-control-receiver'] as $folder) {
+        $unpacked = $root . '/' . $folder;
+        mkdir($unpacked);
+        mkdir($unpacked . '/md-control-receiver');
+        file_put_contents($unpacked . '/md-control-receiver/md-control-receiver.php', '<?php // package');
+        $GLOBALS['installed_folder'] = $folder;
+        $updater = new MD_GitHub_Updater('/installed/md-control-receiver.php', ['user' => 'test', 'repo' => 'test']);
+        $wp_filesystem = new LocalFilesystem();
+        $extra = ['type' => 'plugin', 'action' => 'update', 'plugin' => "$folder/md-control-receiver.php"];
+        $selected = $updater->select_source($unpacked . '/md-control-receiver/', $unpacked, null, $extra);
+        check($selected === "$unpacked/$folder/", 'real source has installed folder name');
+        check(file_exists($selected . 'md-control-receiver.php'), 'entry file survives source selection');
+        unlink($selected . 'md-control-receiver.php');
+        rmdir($selected);
+        rmdir($unpacked);
+    }
+} finally {
+    rmdir($root);
+}
 echo "Updater and backup removal checks passed.\n";

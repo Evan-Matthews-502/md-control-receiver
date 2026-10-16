@@ -1,0 +1,17 @@
+name: Validate plugin
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check PHP and regressions
+        run: |
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/updater.php
+          php tests/auth.php

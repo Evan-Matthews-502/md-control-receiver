@@ -26,6 +26,10 @@ or rename an active plugin folder blindly.
 
 After this one-time transition, updates preserve each installation's existing
 folder (including `md-control-receiver-main` and `md-control-receiver-1.2.6`).
+Signed login links now reject missing API keys and malformed parameters; login
+redirects use WordPress safe redirects. REST authentication rejects missing headers
+without a PHP error.
+
 Fresh installations should use the attached release asset, which installs as
 `md-control-receiver`. Folder normalization on existing sites is a separate
 migration; it is not performed by this update. The existing `md_control_api_key`
@@ -33,6 +37,6 @@ option is retained.
 
 ## Validation
 
-Run `php tests/updater.php` and lint all PHP files before releasing. These are
+Run `php tests/updater.php`, `php tests/auth.php`, and lint all PHP files before releasing. These are
 isolated regression checks; also verify a real WordPress update on staging,
 including cron and bulk updates, before deploying across sites.

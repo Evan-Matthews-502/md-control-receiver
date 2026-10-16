@@ -50,7 +50,10 @@ add_action('rest_api_init', function () {
 
 add_action('init', function () {
     if (!isset($_GET['user'], $_GET['expires'], $_GET['sig'])) return;
-    if (!str_contains($_SERVER['REQUEST_URI'], 'wp-login.php')) return;
+    if (!str_contains($_SERVER['REQUEST_URI'] ?? '', 'wp-login.php')) return;
+    if (!is_string($_GET['user']) || !is_string($_GET['expires']) || !is_string($_GET['sig'])) {
+        wp_die('Invalid login link.');
+    }
 
     $email = sanitize_email($_GET['user']);
     $expires = intval($_GET['expires']);
@@ -59,6 +62,7 @@ add_action('init', function () {
     if (time() > $expires) wp_die('Login link expired.');
 
     $secret = get_option('md_control_api_key');
+    if (!is_string($secret) || $secret === '') wp_die('API key is not configured.');
     $payload = "user=$email&expires=$expires";
     $expected = hash_hmac('sha256', $payload, $secret);
 
@@ -70,8 +74,9 @@ add_action('init', function () {
     wp_set_current_user($user->ID);
     wp_set_auth_cookie($user->ID);
 
-    $redirect = isset($_GET['redirect_to']) ? esc_url_raw($_GET['redirect_to']) : admin_url();
-    wp_redirect($redirect);
+    $redirect = isset($_GET['redirect_to']) && is_string($_GET['redirect_to'])
+        ? esc_url_raw($_GET['redirect_to']) : admin_url();
+    wp_safe_redirect($redirect);
     exit;
 });
 
