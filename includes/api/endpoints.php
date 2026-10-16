@@ -43,30 +43,7 @@ add_action('rest_api_init', function () {
         'permission_callback' => 'md_control_authenticate',
     ]);
 
-    // Backups
-    register_rest_route('md-control/v1', '/backup', [
-        'methods' => 'POST',
-        'callback' => 'md_control_trigger_backup',
-        'permission_callback' => 'md_control_authenticate',
-    ]);
 
-    register_rest_route('md-control/v1', '/backup/status', [
-        'methods' => 'GET',
-        'callback' => 'md_control_get_latest_backup',
-        'permission_callback' => 'md_control_authenticate',
-    ]);
-
-    register_rest_route('md-control/v1', '/backup/download', [
-        'methods' => 'GET',
-        'callback' => 'md_control_download_backup',
-        'permission_callback' => 'md_control_authenticate',
-        'args' => [
-            'file' => [
-                'required' => true,
-                'validate_callback' => fn($value) => preg_match('/^[a-zA-Z0-9._-]+\.wpress$/', $value),
-            ]
-        ]
-    ]);
 });
 
 // === One-Click Login ===
@@ -214,62 +191,6 @@ function md_control_list_users(WP_REST_Request $request) {
     }, get_users($args));
 
     return new WP_REST_Response($users, 200);
-}
-
-function md_control_trigger_backup() {
-    $backup_dir = WP_CONTENT_DIR . '/ai1wm-backups';
-    $cmd = 'wp ai1wm backup';
-
-    chdir(ABSPATH);
-    ob_start();
-    passthru($cmd, $exitCode);
-    $output = ob_get_clean();
-
-    $backups = glob("$backup_dir/*.wpress");
-    usort($backups, fn($a, $b) => filemtime($b) - filemtime($a));
-    $latest = $backups[0] ?? null;
-
-    if (!$latest || !file_exists($latest)) {
-        return new WP_Error('no_backup', 'No backup file was created.', ['status' => 500]);
-    }
-
-    return new WP_REST_Response([
-        'status' => 'success',
-        'filename' => basename($latest),
-        'path' => realpath($latest),
-        'cli_output' => trim($output),
-    ], 200);
-}
-
-function md_control_get_latest_backup() {
-    $backups = glob(AI1WM_BACKUPS_PATH . '/*.wpress');
-    usort($backups, fn($a, $b) => filemtime($b) - filemtime($a));
-
-    if (empty($backups)) return new WP_REST_Response([], 200);
-
-    $latest = basename($backups[0]);
-    return new WP_REST_Response([
-        'status' => 'found',
-        'filename' => $latest,
-        'path' => realpath(AI1WM_BACKUPS_PATH . '/' . $latest),
-    ], 200);
-}
-
-function md_control_download_backup(WP_REST_Request $request) {
-    $filename = basename($request->get_param('file'));
-    $filepath = AI1WM_BACKUPS_PATH . '/' . $filename;
-
-    if (!file_exists($filepath)) {
-        return new WP_Error('file_not_found', 'Backup file does not exist.', ['status' => 404]);
-    }
-
-    header('Content-Description: File Transfer');
-    header('Content-Type: application/octet-stream');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    header('Content-Length: ' . filesize($filepath));
-
-    readfile($filepath);
-    exit;
 }
 
 function md_control_get_update_status() {

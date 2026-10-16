@@ -1,0 +1,31 @@
+name: Package release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate version and PHP
+        run: |
+          version=$(sed -n 's/.*Version: //p' md-control-receiver.php)
+          test "${GITHUB_REF_NAME#v}" = "$version"
+          find . -name '*.php' -print0 | xargs -0 -n1 php -l
+          php tests/updater.php
+      - name: Build fixed-folder archive
+        run: |
+          mkdir -p build/md-control-receiver
+          cp md-control-receiver.php build/md-control-receiver/
+          cp -R includes build/md-control-receiver/
+          cp readme.md build/md-control-receiver/
+          cd build
+          zip -r ../md-control-receiver.zip md-control-receiver
+      - name: Attach package to draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1 || gh release create "$GITHUB_REF_NAME" --draft --title "$GITHUB_REF_NAME" --generate-notes
+          gh release upload "$GITHUB_REF_NAME" md-control-receiver.zip --clobber
