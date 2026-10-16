@@ -3,6 +3,10 @@
 add_action('admin_menu', 'md_control_add_settings_page');
 
 function md_control_add_settings_page() {
+    if (!md_control_can_manage()) {
+        return;
+    }
+
     add_options_page(
         'MD Control Settings',
         'MD Control',
@@ -13,8 +17,8 @@ function md_control_add_settings_page() {
 }
 
 function md_control_render_settings_page() {
-    if (!current_user_can('manage_options')) {
-        return;
+    if (!md_control_can_manage()) {
+        wp_die('You are not allowed to access MD Control settings.', '', ['response' => 403]);
     }
 
     $option_name = 'md_control_api_key';

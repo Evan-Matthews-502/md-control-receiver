@@ -8,9 +8,9 @@ function md_control_authenticate(WP_REST_Request $request) {
     $expected_key = get_option('md_control_api_key');
 
 
-    if (!$expected_key) {
+    if (!is_string($expected_key) || $expected_key === '') {
         return new WP_Error('missing_api_key', 'API key is not set.', ['status' => 500]);
     }
 
-    return hash_equals($expected_key, $provided_key);
+    return is_string($provided_key) && hash_equals($expected_key, $provided_key);
 }
