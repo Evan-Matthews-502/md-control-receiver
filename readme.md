@@ -24,7 +24,13 @@ SSH/SFTP or your deployment tool, retaining the exact current directory and
 its activation and API connection afterward. Do not install a second active copy
 or rename an active plugin folder blindly.
 
-After this one-time transition, updates preserve each installation's existing
+For installations already on 1.2.7 in a legacy folder, use the individual Update Now
+action or automatic update for the first upgrade to 1.2.8. The 1.2.7 bulk-update hook
+requires fields WordPress does not supply during bulk updates; the new code cannot
+repair that hook while the old version is running. Receiver 1.2.8 fixes this for
+subsequent bulk updates.
+
+After this one-time transition, supported updates preserve each installation's existing
 folder (including `md-control-receiver-main` and `md-control-receiver-1.2.6`).
 Signed login links now reject missing API keys and malformed parameters; login
 redirects use WordPress safe redirects. REST authentication rejects missing headers

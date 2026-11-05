@@ -38,6 +38,12 @@ foreach (['md-control-receiver-main', 'md-control-receiver-1.2.6', 'md-control-r
     $source = '/tmp/unpacked/md-control-receiver/';
     check($updater->select_source($source, '/tmp/unpacked/', null, $extra) === "/tmp/unpacked/$folder/", 'preserve installed folder');
     $wp_filesystem = new TestFilesystem();
+    $bulk_extra = ['plugin' => "$folder/md-control-receiver.php", 'temp_backup' => ['slug' => $folder]];
+    check($updater->select_source($source, '/tmp/unpacked/', null, $bulk_extra) === "/tmp/unpacked/$folder/", 'bulk updates omit type and action');
+    $wp_filesystem = new TestFilesystem();
+    $install_extra = $extra; $install_extra['action'] = 'install';
+    check($updater->select_source($source, '/tmp/unpacked/', null, $install_extra) === $source, 'ignore explicit installs');
+    $wp_filesystem = new TestFilesystem();
     check($updater->select_source($source, '/tmp/unpacked/', null, []) === $source, 'ignore installs');
     $other = $extra; $other['plugin'] = 'other/other.php';
     check($updater->select_source($source, '/tmp/unpacked/', null, $other) === $source, 'ignore other plugin');

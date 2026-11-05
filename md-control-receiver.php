@@ -109,9 +109,9 @@ class MD_GitHub_Updater {
         global $wp_filesystem;
 
         // Only touch an update explicitly targeting this installed plugin.
-        if (is_wp_error($source) || ($extra['type'] ?? '') !== 'plugin'
-            || ($extra['action'] ?? '') !== 'update'
-            || ($extra['plugin'] ?? '') !== $this->slug) {
+        if (is_wp_error($source) || ($extra['plugin'] ?? '') !== $this->slug
+            || (isset($extra['type']) && $extra['type'] !== 'plugin')
+            || (isset($extra['action']) && $extra['action'] !== 'update')) {
             return $source;
         }
 
