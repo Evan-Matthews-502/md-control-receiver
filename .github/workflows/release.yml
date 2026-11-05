@@ -17,6 +17,7 @@ jobs:
           php tests/updater.php
           php tests/auth.php
           php tests/admin-access.php
+          php tests/rotate-key.php
       - name: Build fixed-folder archive
         run: |
           mkdir -p build/md-control-receiver

@@ -11,10 +11,10 @@ add_action('rest_api_init', function () {
         'permission_callback' => 'md_control_authenticate',
     ]);
 
-    // Update Status Endpoint
-    register_rest_route('md-control/v1', '/update-status', [
-        'methods' => 'GET',
-        'callback' => 'md_control_get_update_status',
+    // Key Rotation
+    register_rest_route('md-control/v1', '/rotate-key', [
+        'methods' => 'POST',
+        'callback' => 'md_control_rotate_key',
         'permission_callback' => 'md_control_authenticate',
     ]);
 
@@ -61,7 +61,7 @@ add_action('init', function () {
 
     if (time() > $expires) wp_die('Login link expired.');
 
-    $secret = get_option('md_control_api_key');
+    $secret = md_control_get_api_key();
     if (!is_string($secret) || $secret === '') wp_die('API key is not configured.');
     $payload = "user=$email&expires=$expires";
     $expected = hash_hmac('sha256', $payload, $secret);
@@ -84,31 +84,47 @@ add_action('init', function () {
 // === Handlers === //
 
 function md_control_ping(WP_REST_Request $request) {
-    $plugin_updates = get_site_transient('update_plugins');
-    $theme_updates = get_site_transient('update_themes');
-    $core_updates = get_site_transient('update_core');
-
-    $plugin_update_count = isset($plugin_updates->response) ? count($plugin_updates->response) : 0;
-    $theme_update_count = isset($theme_updates->response) ? count($theme_updates->response) : 0;
-    $core_update_count = 0;
-    if (!empty($core_updates->updates)) {
-        foreach ($core_updates->updates as $update) {
-            if (isset($update->response) && $update->response === 'upgrade') {
-                $core_update_count++;
-            }
-        }
-    }
-
     return [
         'site_name' => get_bloginfo('name'),
         'url' => home_url(),
-        'updates' => [
-            'plugins' => $plugin_update_count,
-            'themes' => $theme_update_count,
-            'core' => $core_update_count,
-            'total' => $plugin_update_count + $theme_update_count + $core_update_count,
-        ],
+        'plugin_version' => MD_CONTROL_RECEIVER_VERSION,
     ];
+}
+
+function md_control_rotate_key(WP_REST_Request $request) {
+    global $wpdb;
+    $new_key = $request->get_param('new_key');
+    if (!is_string($new_key) || !preg_match('/\A[a-f0-9]{64}\z/', $new_key)) {
+        return new WP_Error('invalid_key', 'The new key must be 64 lowercase hexadecimal characters.', ['status' => 400]);
+    }
+
+    // Recheck the actual database value: permission callbacks/options caches may be stale.
+    $provided_key = $request->get_header('md-control-key');
+    $option_name = 'md_control_api_key';
+    $current_key = md_control_get_api_key();
+    if (!is_string($provided_key) || !is_string($current_key) || $current_key === ''
+        || !hash_equals($current_key, $provided_key)) {
+        return new WP_Error('rest_forbidden', 'The current API key is required.', ['status' => 401]);
+    }
+    if (hash_equals($current_key, $new_key)) {
+        return new WP_REST_Response(['status' => 'unchanged'], 200);
+    }
+
+    // Compare-and-swap prevents two already-authenticated requests from overwriting each other.
+    $updated = $wpdb->query($wpdb->prepare(
+        "UPDATE {$wpdb->options} SET option_value = %s, autoload = 'no' WHERE option_name = %s AND BINARY option_value = %s",
+        $new_key, $option_name, $current_key
+    ));
+    if ($updated === false) {
+        return new WP_Error('rotate_failed', 'The new key could not be saved.', ['status' => 500]);
+    }
+    wp_cache_delete($option_name, 'options');
+    wp_cache_delete('alloptions', 'options');
+    wp_cache_delete('notoptions', 'options');
+    if ($updated !== 1) {
+        return new WP_Error('rotation_conflict', 'The API key changed during this request. Retry using the current key.', ['status' => 409]);
+    }
+    return new WP_REST_Response(['status' => 'rotated'], 200);
 }
 
 function md_control_create_user(WP_REST_Request $request) {
@@ -196,30 +212,4 @@ function md_control_list_users(WP_REST_Request $request) {
     }, get_users($args));
 
     return new WP_REST_Response($users, 200);
-}
-
-function md_control_get_update_status() {
-    require_once ABSPATH . 'wp-admin/includes/update.php';
-    wp_version_check();
-    wp_update_plugins();
-    wp_update_themes();
-
-    $plugins = get_site_transient('update_plugins');
-    $themes = get_site_transient('update_themes');
-    $core = get_site_transient('update_core');
-
-    $plugin_updates = !empty($plugins->response) ? count($plugins->response) : 0;
-    $theme_updates = !empty($themes->response) ? count($themes->response) : 0;
-    $core_updates = 0;
-
-    if (!empty($core->updates) && isset($core->updates[0]->response) && $core->updates[0]->response === 'upgrade') {
-        $core_updates = 1;
-    }
-
-    return rest_ensure_response([
-        'plugins' => $plugin_updates,
-        'themes' => $theme_updates,
-        'core' => $core_updates,
-        'total' => $plugin_updates + $theme_updates + $core_updates,
-    ]);
 }

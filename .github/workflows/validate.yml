@@ -16,3 +16,4 @@ jobs:
           php tests/updater.php
           php tests/auth.php
           php tests/admin-access.php
+          php tests/rotate-key.php

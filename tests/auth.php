@@ -7,7 +7,13 @@ class WP_REST_Request {
     public function __construct(private $key) {}
     public function get_header($name) { return $this->key; }
 }
-function get_option($name) { return $GLOBALS['secret']; }
+function get_option($name) { return 'deliberately-stale-key'; }
+class AuthDatabase {
+    public $options = 'wp_options';
+    public function prepare($query, ...$args) { return $query; }
+    public function get_var($query) { return $GLOBALS['secret']; }
+}
+$GLOBALS['wpdb'] = new AuthDatabase();
 function check($condition, $label) { if (!$condition) throw new Exception($label); }
 require __DIR__ . '/../includes/auth/middleware.php';
 $GLOBALS['secret'] = 'configured-key';
