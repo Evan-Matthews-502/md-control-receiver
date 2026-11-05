@@ -24,7 +24,13 @@ SSH/SFTP or your deployment tool, retaining the exact current directory and
 its activation and API connection afterward. Do not install a second active copy
 or rename an active plugin folder blindly.
 
-After this one-time transition, updates preserve each installation's existing
+For installations already on 1.2.7 in a legacy folder, use the individual Update Now
+action or automatic update for the first upgrade to 1.2.8. The 1.2.7 bulk-update hook
+requires fields WordPress does not supply during bulk updates; the new code cannot
+repair that hook while the old version is running. Receiver 1.2.8 fixes this for
+subsequent bulk updates.
+
+After this one-time transition, supported updates preserve each installation's existing
 folder (including `md-control-receiver-main` and `md-control-receiver-1.2.6`).
 Signed login links now reject missing API keys and malformed parameters; login
 redirects use WordPress safe redirects. REST authentication rejects missing headers
@@ -37,7 +43,7 @@ option is retained.
 
 ## Validation
 
-Run `php tests/updater.php`, `php tests/auth.php`, and lint all PHP files before releasing. These are
+Run `php tests/updater.php`, `php tests/auth.php`, `php tests/admin-access.php`, `php tests/rotate-key.php`, and lint all PHP files before releasing. These are
 isolated regression checks; also verify a real WordPress update on staging,
 including cron and bulk updates, before deploying across sites.
 
@@ -53,3 +59,12 @@ Background updates and API authentication are unaffected.
 This controls the active plugin's admin interface, not access to server files,
 WP-CLI, or other administrative tools. An inactive plugin cannot hide itself.
 Run `php tests/admin-access.php` to validate visibility and settings restrictions.
+
+## Key rotation (1.2.8)
+
+`POST /wp-json/md-control/v1/rotate-key` replaces the stored `md_control_api_key` with the
+`new_key` parameter. It is authenticated with the current key, accepts only 64 lowercase
+hexadecimal characters, and returns `rotated`, or `unchanged` when the key is already set.
+MD Control generates the key and confirms it with a ping before it stops using the old one. The receiver rechecks the database key and updates it atomically, rejecting stale or competing requests. Rotation must use HTTPS. Hub retains an unconfirmed candidate for recovery; it never silently discards a key that may have reached WordPress.
+The ping response now includes `plugin_version`; the update-status endpoint and update
+counts were removed because MD Control no longer uses them.
