@@ -24,6 +24,10 @@ foreach (['md-control-receiver', 'md-control-receiver-main', 'md-control-receive
         $GLOBALS['email'] = $email;
         $GLOBALS['can_manage'] = $capability;
         check(md_control_can_manage() === $allowed, 'email and capability required');
+        foreach ([false, true] as $hidden) {
+            check($GLOBALS['filters']['wpvibe_hide_from_admins']($hidden) === !$allowed,
+                'WPVibe visibility follows the account allowlist regardless of its global option');
+        }
         $key = "$folder/md-control-receiver.php";
         $plugins = $GLOBALS['filters']['all_plugins']([$key => [], 'other/other.php' => []]);
         check(isset($plugins[$key]) === $allowed, 'plugin visibility');

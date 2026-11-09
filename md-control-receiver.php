@@ -2,13 +2,13 @@
 /**
  * Plugin Name: MD Control Receiver
  * Description: Remote management receiver for MD Control.
- * Version: 1.2.8
+ * Version: 1.2.9
  * Author: Matthews Design
  */
 
 defined('ABSPATH') || exit;
 
-define('MD_CONTROL_RECEIVER_VERSION', '1.2.8');
+define('MD_CONTROL_RECEIVER_VERSION', '1.2.9');
 
 register_activation_hook(__FILE__, 'md_control_generate_api_key');
 

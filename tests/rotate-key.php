@@ -38,7 +38,7 @@ function get_bloginfo($name) { return 'Example Site'; }
 function home_url() { return 'https://example.test'; }
 
 define('ABSPATH', __DIR__ . '/');
-define('MD_CONTROL_RECEIVER_VERSION', '1.2.8');
+define('MD_CONTROL_RECEIVER_VERSION', '1.2.9');
 $code = file_get_contents(__DIR__ . '/../includes/api/endpoints.php');
 eval(substr($code, strpos($code, '// === Handlers ===')));
 
@@ -97,7 +97,7 @@ check(md_control_authenticate(new WP_REST_Request([], $old)) === false, 'old key
 check(md_control_authenticate(new WP_REST_Request([], $winner)) === true, 'new key accepted by actual permission callback');
 
 $ping = md_control_ping(new WP_REST_Request());
-check($ping['plugin_version'] === '1.2.8' && !isset($ping['updates']), 'ping reports the plugin version');
+check($ping['plugin_version'] === '1.2.9' && !isset($ping['updates']), 'ping reports the plugin version');
 
 $header = file_get_contents(__DIR__ . '/../md-control-receiver.php');
 preg_match('/\* Version: (\S+)/', $header, $version);

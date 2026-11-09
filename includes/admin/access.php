@@ -12,6 +12,13 @@ function md_control_can_manage() {
     ], true);
 }
 
+// WPVibe owns the UI suppression; reuse our account allowlist rather than
+// changing its files or a global option that would also hide it from our team.
+// Resolve the current user when the filter runs, after authentication is ready.
+add_filter('wpvibe_hide_from_admins', function ($hidden) {
+    return !md_control_can_manage();
+});
+
 // Filter the admin table only; leave update discovery and background work intact.
 add_filter('all_plugins', function ($plugins) {
     if (!md_control_can_manage()) {

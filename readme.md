@@ -68,3 +68,9 @@ hexadecimal characters, and returns `rotated`, or `unchanged` when the key is al
 MD Control generates the key and confirms it with a ping before it stops using the old one. The receiver rechecks the database key and updates it atomically, rejecting stale or competing requests. Rotation must use HTTPS. Hub retains an unconfirmed candidate for recovery; it never silently discards a key that may have reached WordPress.
 The ping response now includes `plugin_version`; the update-status endpoint and update
 counts were removed because MD Control no longer uses them.
+
+## Admin access controls (1.2.9)
+
+Extends account-based admin visibility controls to compatible integrations.
+Uses the receiver's existing administrator allowlist and preserves background
+operations and existing API authentication.
